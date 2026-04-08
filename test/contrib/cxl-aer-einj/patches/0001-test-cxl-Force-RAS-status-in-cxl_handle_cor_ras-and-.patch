@@ -1,0 +1,51 @@
+From 1b4054d82a1834e211ef3f284b9f51926db8f060 Mon Sep 17 00:00:00 2001
+From: Terry Bowman <terry.bowman@amd.com>
+Date: Tue, 7 Apr 2026 16:47:45 -0500
+Subject: [PATCH] test/cxl: Force RAS status in cxl_handle_cor_ras() and
+ cxl_handle_ras()
+
+CXL RAS error injection is present for Root Ports but not for other CXL
+devices. Provide the means to test protocol errors for all CXL devices
+in a testing environment. Use 'aer-inject' userspace tool to deliver AER
+internal error notification which will trigger the CXL driver's RAS
+handling. Hardcode the status for CE and UCE errors in cxl_handle_ras()
+and cxl_handle_cor_ras().
+
+Signed-off-by: Terry Bowman <terry.bowman@amd.com>
+---
+ drivers/cxl/core/ras.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/drivers/cxl/core/ras.c b/drivers/cxl/core/ras.c
+index 006c6ffc2f56..09ff82973c70 100644
+--- a/drivers/cxl/core/ras.c
++++ b/drivers/cxl/core/ras.c
+@@ -183,6 +183,9 @@ void devm_cxl_port_ras_setup(struct cxl_port *port)
+ }
+ EXPORT_SYMBOL_NS_GPL(devm_cxl_port_ras_setup, "CXL");
+ 
++#define CXL_RAS_UNCORRECTABLE_STATUS_CACHE_ECC 0x1
++#define CXL_RAS_CORRECTABLE_STATUS_CACHE_ECC 0x1
++
+ void cxl_handle_cor_ras(struct device *dev, void __iomem *ras_base)
+ {
+ 	void __iomem *addr;
+@@ -193,6 +196,7 @@ void cxl_handle_cor_ras(struct device *dev, void __iomem *ras_base)
+ 
+ 	addr = ras_base + CXL_RAS_CORRECTABLE_STATUS_OFFSET;
+ 	status = readl(addr);
++	status |= CXL_RAS_CORRECTABLE_STATUS_CACHE_ECC;
+ 	if (status & CXL_RAS_CORRECTABLE_STATUS_MASK) {
+ 		writel(status & CXL_RAS_CORRECTABLE_STATUS_MASK, addr);
+ 		trace_cxl_aer_correctable_error(to_cxl_memdev(dev), status);
+@@ -232,6 +236,7 @@ bool cxl_handle_ras(struct device *dev, void __iomem *ras_base)
+ 
+ 	addr = ras_base + CXL_RAS_UNCORRECTABLE_STATUS_OFFSET;
+ 	status = readl(addr);
++	status |= CXL_RAS_UNCORRECTABLE_STATUS_CACHE_ECC;
+ 	if (!(status & CXL_RAS_UNCORRECTABLE_STATUS_MASK))
+ 		return false;
+ 
+-- 
+2.34.1
+
