@@ -9,7 +9,7 @@ internal errors are masked according to the PCI specification and are
 generally not used. However, these internal errors are now leveraged to
 notify the PCI and CXL subsystems of CXL protocol errors. The attached
 patches enable support for CE and UCE internal errors in `aer-inject`,
-allowing you to test CXL RAS functionality.
+allowing for injected CXL protocol errors to be delivered to the CXL core.
 
 Signed-off-by: Terry Bowman <terry.bowman@amd.com>
 ---
